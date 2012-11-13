@@ -23,12 +23,12 @@ image_suffix = ".png"
 
 -- More-or-less arbitrary thresholds for the various icons:
 status_thresholds = {
-	[ 00 ] = "000",
-	[ 08 ] = "020",
-	[ 30 ] = "040",
-	[ 55 ] = "060",
-	[ 80 ] = "080",
-	[ 90 ] = "100",
+    [ 00 ] = "000",
+    [ 08 ] = "020",
+    [ 30 ] = "040",
+    [ 55 ] = "060",
+    [ 80 ] = "080",
+    [ 90 ] = "100",
 }
 
 
@@ -36,31 +36,31 @@ status_thresholds = {
 
 -- Instance initializer.
 function _M:initialize( device )
-	__super.initialize( self )
+    __super.initialize( self )
 
-	self.device = device or "BAT0"
-	self.icon_name = ""
+    self.device = device or "BAT0"
+    self.icon_name = ""
 
-	-- Create dbus monitor:
-	local path = "/org/freedesktop/UPower/devices/battery_" .. self.device
-	self.dbus_monitor = adroit.dbus.Monitor:new(
-		"org.freedesktop.UPower.Device", {
-			member = "Changed",
-			path = path,
-			sender = "org.freedesktop.UPower",
-			type = "signal",
-		}
-	)
-	self.dbus_monitor.receive = function ( message )
-		self:notify( message )
-	end
+    -- Create dbus monitor:
+    local path = "/org/freedesktop/UPower/devices/battery_" .. self.device
+    self.dbus_monitor = adroit.dbus.Monitor:new(
+        "org.freedesktop.UPower.Device", {
+            member = "Changed",
+            path = path,
+            sender = "org.freedesktop.UPower",
+            type = "signal",
+        }
+    )
+    self.dbus_monitor.receive = function ( message )
+        self:notify( message )
+    end
 
-	self.dbus_method_caller = adroit.dbus.MethodCaller:new(
-		"system", "org.freedesktop.UPower", path,
-		"org.freedesktop.DBus.Properties", "GetAll",
-		"org.freedesktop.UPower.Device",
-		self.receive_poll, self
-	)
+    self.dbus_method_caller = adroit.dbus.MethodCaller:new(
+        "system", "org.freedesktop.UPower", path,
+        "org.freedesktop.DBus.Properties", "GetAll",
+        "org.freedesktop.UPower.Device",
+        self.receive_poll, self
+    )
 
 end
 
@@ -76,10 +76,10 @@ end
 
 -- Enable polling, event listeners, and UI updating.
 function _M:enable()
-	__super.enable( self )
+    __super.enable( self )
 
-	self.dbus_monitor:activate( "system" )
-	self.poll:set_poll_function( send_poll, self )
+    self.dbus_monitor:activate( "system" )
+    self.poll:set_poll_function( send_poll, self )
 end
 
 
@@ -87,16 +87,16 @@ end
 
 -- Return a new instance in the form of awesome widgets.
 function _M:get_ui()
-	local w = widget( { type = "imagebox" } )
-	self.interfaces[ #self.interfaces + 1 ] = w
+    local w = widget( { type = "imagebox" } )
+    self.interfaces[ #self.interfaces + 1 ] = w
 
-	if self.icon_name == "" then
-		self.poll:now()
-	end
+    if self.icon_name == "" then
+        self.poll:now()
+    end
 
-	--w.image = image( image_prefix .. self.icon_name .. image_suffix )
+    --w.image = image( image_prefix .. self.icon_name .. image_suffix )
 
-	return w
+    return w
 end
 
 
@@ -104,7 +104,7 @@ end
 
 -- Receive an event notification.
 function _M:notify( message )
-	self.poll:now()
+    self.poll:now()
 end
 
 
@@ -120,33 +120,33 @@ end
 -- Update all widget UIs as needed.
 function _M:update( state, percentage )
 
-	local level = 0
-	local level_string = "000"
+    local level = 0
+    local level_string = "000"
 
-	for threshold, ls in pairs( status_thresholds ) do
-		if percentage >= threshold and level < threshold then
-			level_string = ls
-			level = threshold
-		end
-	end
+    for threshold, ls in pairs( status_thresholds ) do
+        if percentage >= threshold and level < threshold then
+            level_string = ls
+            level = threshold
+        end
+    end
 
-	local charging = ""
-	if state == 1 then
-		charging = "-charging"
-	end
+    local charging = ""
+    if state == 1 then
+        charging = "-charging"
+    end
 
-	-- Check if the icon we're using should change:
-	local icon_name = level_string .. charging 
-	if self.icon_name ~= icon_name then
-		self.icon_name = icon_name
+    -- Check if the icon we're using should change:
+    local icon_name = level_string .. charging 
+    if self.icon_name ~= icon_name then
+        self.icon_name = icon_name
 
-		-- Update the icons for all interfaces:
-		for i, widget in pairs( self.interfaces ) do
-			widget.image = image(
-				image_prefix .. icon_name .. image_suffix
-			)
-		end
-	end
+        -- Update the icons for all interfaces:
+        for i, widget in pairs( self.interfaces ) do
+            widget.image = image(
+                image_prefix .. icon_name .. image_suffix
+            )
+        end
+    end
 end
 
 
@@ -186,14 +186,14 @@ function _M:receive_poll( message, status )
 
 
 
-	--t = ""
-	--for key, value in pairs( status ) do
-		--t = t .. key .. "=" .. type( value ) .. "\n"
-	--end
-	--print( "Status: " .. t .. "FIN" )
+    --t = ""
+    --for key, value in pairs( status ) do
+        --t = t .. key .. "=" .. type( value ) .. "\n"
+    --end
+    --print( "Status: " .. t .. "FIN" )
 
-	-- If icon changes, then update UIs
-	self:update( status.State, tonumber( status.Percentage ) )
+    -- If icon changes, then update UIs
+    self:update( status.State, tonumber( status.Percentage ) )
 end
 
 
@@ -202,10 +202,10 @@ end
 -- Query battery status.
 function _M:send_poll()
 
-	self.dbus_method_caller:invoke()
+    self.dbus_method_caller:invoke()
 end
 
 
 -----------------------------------------------------------------------------
 
-
+-- vi: set filetype=lua shiftwidth=4 tabstop=4 expandtab:

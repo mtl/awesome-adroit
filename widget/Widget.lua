@@ -33,9 +33,9 @@ adroit.require( "adroit.widget.poller.Nop" )
 
 -- Instance initializer.
 function _M:initialize()
-	__super.initialize( self )
-	self.interfaces = {}
-	self.poll = adroit.widget.poller.Nop:new()
+    __super.initialize( self )
+    self.interfaces = {}
+    self.poll = adroit.widget.poller.Nop:new()
 end
 
 
@@ -50,9 +50,9 @@ end
 
 -- Enable polling, event listeners, and UI updating.
 function _M:enable()
-	if self.poll ~= nil then
-		self.poll.resume()
-	end
+    if self.poll ~= nil then
+        self.poll.resume()
+    end
 end
 
 
@@ -74,7 +74,7 @@ end
 
 -- Reset all widget UIs.
 function _M:refresh()
-	self.update()
+    self.update()
 end
 
 
@@ -87,3 +87,4 @@ end
 
 -----------------------------------------------------------------------------
 
+-- vi: set filetype=lua shiftwidth=4 tabstop=4 expandtab:

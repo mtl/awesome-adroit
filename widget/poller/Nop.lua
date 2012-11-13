@@ -10,7 +10,7 @@ _M.__index = _M -- This module is a class.
 
 -- Instance initializer.
 --function _M:initialize()
-	--__super.initialize( self )
+    --__super.initialize( self )
 --end
 
 
@@ -37,3 +37,4 @@ _M.__index = _M -- This module is a class.
 
 -----------------------------------------------------------------------------
 
+-- vi: set filetype=lua shiftwidth=4 tabstop=4 expandtab:

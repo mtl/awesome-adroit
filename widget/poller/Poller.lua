@@ -10,10 +10,10 @@ _M.__index = _M -- This module is a class.
 
 -- Instance initializer.
 function _M:initialize( poll_function, poll_object )
-	__super.initialize( self )
+    __super.initialize( self )
 
-	self.enabled = false
-	self:set_poll_function( poll_function, poll_object )
+    self.enabled = false
+    self:set_poll_function( poll_function, poll_object )
 end
 
 
@@ -21,9 +21,9 @@ end
 
 -- Force a poll now.
 function _M:now()
-	if self._poll_function ~= nil then
-		self._poll_function( self._poll_object )
-	end
+    if self._poll_function ~= nil then
+        self._poll_function( self._poll_object )
+    end
 end
 
 
@@ -38,8 +38,8 @@ end
 
 -- Set the poll function.
 function _M:set_poll_function( poll_function, poll_object )
-	self._poll_function = poll_function
-	self._poll_object = poll_object
+    self._poll_function = poll_function
+    self._poll_object = poll_object
 end
 
 
@@ -52,3 +52,4 @@ end
 
 -----------------------------------------------------------------------------
 
+-- vi: set filetype=lua shiftwidth=4 tabstop=4 expandtab:

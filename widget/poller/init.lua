@@ -15,4 +15,4 @@ Regular = adroit.require( 'adroit.widget.poller.Regular' )
 
 -----------------------------------------------------------------------------
 
--- vim: filetype=lua:noexpandtab:shiftwidth=4:tabstop=8:softtabstop=4
+-- vi: set filetype=lua shiftwidth=4 tabstop=4 expandtab:

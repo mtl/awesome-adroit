@@ -36,27 +36,27 @@ local function _module( _m, modname, ... )
     _m._NAME = modname
     _m._PACKAGE = modname:gsub( "[^.]*$", "" )
 
-	-- Define an environment for the module:
+    -- Define an environment for the module:
     local environment = {}
     _G.setmetatable( environment, {
 
-		__index = function( table, key )
-			return _m[ key ] or pollution[ key ]
-		end,
+        __index = function( table, key )
+            return _m[ key ] or pollution[ key ]
+        end,
 
-		__newindex = _m
+        __newindex = _m
     } )
     _G.setfenv( 3, environment ) -- Note: This must come before decorators are applied.
 
     -- Apply decorators to the module:
     if ... then
-		for _, func in _G.ipairs( { ... } ) do
-			func( _m )
-		end
+        for _, func in _G.ipairs( { ... } ) do
+            func( _m )
+        end
     end
 
     _G.package.loaded[ modname ] = _m
-	return _m
+    return _m
 end
 
 function module( modname, ... )
@@ -72,9 +72,9 @@ end
 --  * Lookups in the private module environment query first the module,
 --    then the global namespace.
 function seeall( _m )
-	_G.getmetatable( _G.getfenv( 4 ) ).__index = function( table, key )
-		return _m[ key ] or pollution[ key ] or _G[ key ]
-	end
+    _G.getmetatable( _G.getfenv( 4 ) ).__index = function( table, key )
+        return _m[ key ] or pollution[ key ] or _G[ key ]
+    end
 end
 
 
@@ -87,8 +87,8 @@ local function _require( name )
     --_G.print( "Requiring '" .. name .. "'..." )
     --local current_modname = _G.getfenv( 3 )._NAME
     --if current_modname ~= nil then
-		--name = current_modname .. "." .. name
-		--_G.print( "Expanding to '" .. name .. "'." )
+        --name = current_modname .. "." .. name
+        --_G.print( "Expanding to '" .. name .. "'." )
     --end
     local result = _G.require( name )
     _G.rawset( _G.getfenv( 3 ), name, result )
@@ -104,15 +104,15 @@ end
 
 function module_extends( modname, parent, ... )
 
-	-- Convert parent name to module:
+    -- Convert parent name to module:
     parent = _require( parent )
 
-	-- Create the new module:
+    -- Create the new module:
     local _m = _module( create_object( parent ), modname, ... )
-	_m.__super = parent
+    _m.__super = parent
 
-	-- Define useful properties in the scope chain:
-	local environment = _G.getfenv( 2 )
+    -- Define useful properties in the scope chain:
+    local environment = _G.getfenv( 2 )
 end
 
 
@@ -120,9 +120,9 @@ end
 
 -- Object generator.
 function create_object( _M )
-	local o = {}
-	_G.setmetatable( o, _M )
-	return o
+    local o = {}
+    _G.setmetatable( o, _M )
+    return o
 end
 
 
@@ -130,11 +130,11 @@ end
 
 -- Instance initializer.
 function alert( text, title )
-	_G.naughty.notify( {
-		preset = _G.naughty.config.presets.normal,
-		title = title or "adroit alert",
-		text = text
-	} )
+    _G.naughty.notify( {
+        preset = _G.naughty.config.presets.normal,
+        title = title or "adroit alert",
+        text = text
+    } )
 end
 
 
@@ -142,9 +142,9 @@ end
 
 -- Properties to add to module search space:
 pollution = {
-	adroit = _M,
-	alert = alert,
-	--__create_object = create_object,
+    adroit = _M,
+    alert = alert,
+    --__create_object = create_object,
 }
 
 
@@ -158,4 +158,4 @@ widget = require( 'adroit.widget' )
 
 -----------------------------------------------------------------------------
 
--- vim: filetype=lua:noexpandtab:shiftwidth=4:tabstop=8:softtabstop=4
+-- vi: set filetype=lua shiftwidth=4 tabstop=4 expandtab:
