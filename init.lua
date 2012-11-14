@@ -59,25 +59,6 @@ local function _module( _m, modname, ... )
     return _m
 end
 
-function module( modname, ... )
-    return _module( {}, modname, ... )
-end
-
-
------------------------------------------------------------------------------
-
--- Called as adroit.module(..., adroit.seeall).  Use a private proxy environment for
--- the module, so that the module can access global variables.
---  * Global assignments inside module get placed in the module.
---  * Lookups in the private module environment query first the module,
---    then the global namespace.
-function seeall( _m )
-    _G.getmetatable( _G.getfenv( 4 ) ).__index = function( table, key )
-        return _m[ key ] or pollution[ key ] or _G[ key ]
-    end
-end
-
-
 -----------------------------------------------------------------------------
 
 -- Require module, but store module only in private namespace of caller (not
@@ -95,24 +76,16 @@ local function _require( name )
     return result
 end
 
-function require( name )
-    return _require( name )
-end
-
 
 -----------------------------------------------------------------------------
 
-function module_extends( modname, parent, ... )
-
-    -- Convert parent name to module:
-    parent = _require( parent )
-
-    -- Create the new module:
-    local _m = _module( create_object( parent ), modname, ... )
-    _m.__super = parent
-
-    -- Define useful properties in the scope chain:
-    local environment = _G.getfenv( 2 )
+-- Instance initializer.
+function alert( text, title )
+    _G.naughty.notify( {
+        preset = _G.naughty.config.presets.normal,
+        title = title or "adroit alert",
+        text = text
+    } )
 end
 
 
@@ -128,13 +101,61 @@ end
 
 -----------------------------------------------------------------------------
 
--- Instance initializer.
-function alert( text, title )
-    _G.naughty.notify( {
-        preset = _G.naughty.config.presets.normal,
-        title = title or "adroit alert",
-        text = text
-    } )
+local function initialize_module( _m )
+
+    local initializer = _m.static_initializer
+
+    if _G.type( initializer ) == "function" then
+        initializer( _m )
+        _m.static_initializer = nil
+    end
+end
+
+
+-----------------------------------------------------------------------------
+
+function module( modname, ... )
+    local _m = _module( {}, modname, ... )
+    initialize_module( _m )
+    return _m
+end
+
+
+-----------------------------------------------------------------------------
+
+function module_extends( modname, parent, ... )
+
+    -- Convert parent name to module:
+    parent = _require( parent )
+
+    -- Create the new module:
+    local _m = _module( create_object( parent ), modname, ... )
+    _m.__super = parent
+
+    initialize_module( _m )
+
+    return _m
+end
+
+
+-----------------------------------------------------------------------------
+
+function require( name )
+    return _require( name )
+end
+
+
+-----------------------------------------------------------------------------
+
+-- Called as adroit.module(..., adroit.seeall).  Use a private proxy environment for
+-- the module, so that the module can access global variables.
+--  * Global assignments inside module get placed in the module.
+--  * Lookups in the private module environment query first the module,
+--    then the global namespace.
+function seeall( _m )
+    _G.getmetatable( _G.getfenv( 4 ) ).__index = function( table, key )
+        return _m[ key ] or pollution[ key ] or _G[ key ]
+    end
 end
 
 

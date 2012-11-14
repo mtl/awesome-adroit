@@ -58,7 +58,7 @@ function _M:initialize( device )
     self.dbus_method_caller = adroit.dbus.MethodCaller:new(
         "system", "org.freedesktop.UPower", path,
         "org.freedesktop.DBus.Properties", "GetAll",
-        "org.freedesktop.UPower.Device",
+        { "org.freedesktop.UPower.Device" },
         self.receive_poll, self
     )
 

@@ -18,8 +18,12 @@ parser = argparse.ArgumentParser(
     description = 'Call a DBus method and submit the results to the awesome adroit module.'
 )
 parser.add_argument(
-    '-c', '--call-id', dest = 'call_id', action = 'store', required = True,
+    '-c', '--call-id', dest = 'call_id', action = 'store', default = None, required = False,
     help = 'unique identifier for this method call'
+)
+parser.add_argument(
+    '-r', '--recipient', dest = 'recipient', action = 'store', required = False,
+    help = 'recipient (awesome) destination for results callback'
 )
 parser.add_argument(
     '-b', '--bus', dest = 'bus', action = 'store', required = True,
@@ -35,33 +39,67 @@ parser.add_argument(
     help = 'path of the object on which the method will be called'
 )
 parser.add_argument(
-    '-i', '--interface', dest = 'interface', action = 'store', required = True,
+    '-i', '--interface', dest = 'interface', action = 'store', required = False,
     help = 'interface of the method to be called'
 )
 parser.add_argument(
-    '-m', '--method', '--member', dest = 'member', action = 'store', required = True,
+    '-m', '--method', '--member', dest = 'member', action = 'store', required = False,
     help = 'member (i.e., method) to be called'
 )
 parser.add_argument(
-    'arguments', metavar = 'arg', nargs = '+',
+    '-x', '--introspect', dest = 'introspect', default = False,
+    action = 'store_const', const = True, required = False,
+    help = 'introspect the given interface'
+)
+parser.add_argument(
+    'arguments', metavar = 'arg', nargs = '*',
     help = 'Arguments for the method call'
 )
 
 args = parser.parse_args()
-#print(args.accumulate(args.integers))
+#print(args.accumulate(args.arguments))
 
 
 #----------------------------------------------------------------------------
 
 def main( args ):
-    #print( "Calling..." )
-    result = call_method( args )
-    #print( "Result: " )
-    #print( result )
-    #print( "Returning..." )
-    result = call_awesome_with_result( args, result )
-    #print( "Received: " )
-    #print( result )
+
+    if args.introspect:
+        introspect( args )
+    else:
+        #print( "Calling..." )
+        result = call_method( args )
+
+        if args.call_id == None:
+            print( "Result: " )
+            print( result )
+        else:
+            #print( "Returning..." )
+            result = call_awesome_with_result( args, result )
+            #print( "Received: " )
+            #print( result )
+
+
+#----------------------------------------------------------------------------
+
+def introspect( args ):
+
+    # Get the requested bus:
+    if args.bus == 'system':
+        dbus_bus = dbus.SystemBus()
+    else:
+        dbus_bus = dbus.SessionBus()
+
+    # Get a DBus proxy object:
+    dbus_object = dbus_bus.get_object( args.destination, args.path )
+
+    introspection_interface = dbus.Interface(
+        dbus_object,
+        dbus.INTROSPECTABLE_IFACE,
+    )
+
+    interface = introspection_interface.Introspect()
+    print( interface )
 
 
 #----------------------------------------------------------------------------
@@ -71,11 +109,11 @@ def call_awesome_with_result( args, result ):
     dbus_bus = dbus.SessionBus()
     try:
         dbus_object = dbus_bus.get_object(
-            "org.naquadah.awesome.adroit", "/"
+            args.recipient, "/"
         )
         return dbus_object.MethodCallResult(
             args.call_id, result,
-            dbus_interface = "org.naquadah.awesome.adroit.dbus"
+            dbus_interface = args.recipient + ".dbus"
         )
     except dbus.exceptions.DBusException:
         print( "Could not connect to awesome+adroit." )
@@ -96,7 +134,7 @@ def call_method( args ):
 
     # Invoke the method and store its result:
     result = getattr( dbus_object, args.member )(
-        "org.freedesktop.UPower.Device", dbus_interface = args.interface
+        *args.arguments, dbus_interface = args.interface
     )
 
     # Convert doubles to strings, since awesome doesn't handle doubles:
@@ -140,11 +178,5 @@ main( args )
 
 #----------------------------------------------------------------------------
 
-#introspection_interface = dbus.Interface(
-    #dbus_object,
-    #dbus.INTROSPECTABLE_IFACE,
-#)
-#interface = introspection_interface.Introspect()
-#print interface
 
 # vi: set filetype=python shiftwidth=4 tabstop=4 expandtab:

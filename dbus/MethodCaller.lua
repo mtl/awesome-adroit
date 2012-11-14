@@ -20,24 +20,6 @@ local registered = false
 
 -----------------------------------------------------------------------------
 
-function register()
-
-    dbus.request_name( "session", dbus_name )
-    dbus_monitor = adroit.dbus.Monitor:new(
-        dbus_name .. ".dbus",
-        {
-            member = "MethodCallResult",
-            type = "method_call",
-        }
-    )
-    dbus_monitor.receive = receive
-    dbus_monitor:activate()
-    registered = true
-end
-
-
------------------------------------------------------------------------------
-
 function receive( monitor, message, call_id, result )
 
     call_id = tonumber( call_id )
@@ -61,6 +43,30 @@ function receive( monitor, message, call_id, result )
     return "s", "Message received." 
 end
 
+
+-----------------------------------------------------------------------------
+
+function register()
+
+    dbus.request_name( "session", dbus_name )
+    dbus_monitor = adroit.dbus.Monitor:new(
+        dbus_name .. ".dbus",
+        {
+            member = "MethodCallResult",
+            type = "method_call",
+        }
+    )
+    dbus_monitor.receive = receive
+    dbus_monitor:activate()
+    registered = true
+end
+
+
+-----------------------------------------------------------------------------
+
+function set_dbus_name( name )
+    dbus_name = name
+end
 
 -----------------------------------------------------------------------------
 
@@ -101,13 +107,18 @@ function _M:invoke()
     local command = (
         adroit.location .. "/dbus/MethodCaller.py" ..
         " -c " .. call_id ..
+        " -r " .. dbus_name ..
         " -b " .. self.bus ..
         " -d " .. self.destination ..
         " -p " .. self.path ..
         " -i " .. self.interface ..
-        " -m " .. self.member ..
-        " " .. self.arguments
+        " -m " .. self.member
     )
+    for i, arg in ipairs( self.arguments ) do
+        command = command .. " " .. arg
+    end
+
+    --print( "Executing: " .. command )
 
     -- Invoke the method:
     awful.util.spawn( command, false )
