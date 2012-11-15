@@ -132,13 +132,45 @@ def call_method( args ):
     # Get a DBus proxy object:
     dbus_object = dbus_bus.get_object( args.destination, args.path )
 
+    # Unpack arguments:
+    arguments = unpack_arguments( args.arguments )
+
     # Invoke the method and store its result:
     result = getattr( dbus_object, args.member )(
-        *args.arguments, dbus_interface = args.interface
+        *arguments, dbus_interface = args.interface
     )
 
     # Convert doubles to strings, since awesome doesn't handle doubles:
     return fix_doubles( result )
+
+
+#----------------------------------------------------------------------------
+
+def unpack_arguments( arguments ):
+
+    retargs = []
+
+    for arg in arguments:
+        typechar = arg[ 0 ]
+        
+        if typechar == "s":
+            if len( arg ) > 2:
+                arg = arg[ 2 : ]
+            else:
+                arg = ""
+            #print( "Found string: " + arg )
+            pass
+        elif typechar == "i":
+            arg = int( arg[ 2 : ] )
+            #print( "Found int: " + str( arg ) )
+        else:
+            print( "Unknown type: " + arg )
+            continue
+
+        retargs.append( arg )
+
+    return retargs
+
 
 
 #----------------------------------------------------------------------------

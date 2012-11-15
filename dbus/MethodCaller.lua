@@ -90,7 +90,7 @@ end
 -----------------------------------------------------------------------------
 
 -- Invoke the method.
-function _M:invoke()
+function _M:invoke( method, arguments )
 
     -- Ensure the class has been initialized:
     if not registered then
@@ -101,7 +101,6 @@ function _M:invoke()
     local call_id = next_call_id
     next_call_id = call_id + 1
     callers[ call_id ] = self
-    --print( "Saved call_id: " .. tostring( call_id ) )
 
     -- Construct the command:
     local command = (
@@ -112,10 +111,14 @@ function _M:invoke()
         " -d " .. self.destination ..
         " -p " .. self.path ..
         " -i " .. self.interface ..
-        " -m " .. self.member
+        " -m " .. ( method or self.member )
     )
-    for i, arg in ipairs( self.arguments ) do
-        command = command .. " " .. arg
+
+    arguments = arguments or self.arguments
+    if arguments ~= nil then
+        for i, arg in ipairs( arguments ) do
+            command = command .. " " .. arg
+        end
     end
 
     --print( "Executing: " .. command )
