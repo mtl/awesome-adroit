@@ -190,6 +190,8 @@ function _M:notify( match_info, message, state, info )
     status.network_no = info[ 4 ]
     status.bitrate = info[ 5 ]
 
+    self:update()
+
     -- If we need to update more status, do so now:
     if true then
         self:receive_id( nil, "network_no", status.network_no )
@@ -207,28 +209,40 @@ end
 -----------------------------------------------------------------------------
 
 -- Update all widget UIs as needed.
-function _M:update( state, percentage )
+function _M:update()
 
-    local level = 0
-    local level_string = "000"
+--    image_states = {
+--        disconnected = "disconn",
+--        idle = "idle",
+--        transmitting = "tx",
+--        receiving = "rx",
+--        duplex = "txrx",
+--    }
 
-    for threshold, ls in pairs( status_thresholds ) do
-        if percentage >= threshold and level < threshold then
-            level_string = ls
-            level = threshold
+    local icon_name = ""
+    local status = self.status
+
+    local quality = tonumber( status.quality )
+    if status.connection_up then
+        if quality ~= nil then
+
+            local level = 0
+            icon_name = status_thresholds[ 0 ]
+            for threshold, name in pairs( status_thresholds ) do
+                if quality >= threshold and level < threshold then
+                    icon_name = name 
+                    level = threshold
+                end
+            end
         end
-    end
-
-    local charging = ""
-    if state == 1 then
-        charging = "-charging"
+    else
+        icon_name = image_states.disconnected
     end
 
     -- Check if the icon we're using should change:
-    local icon_name = level_string .. charging 
     if self.icon_name ~= icon_name then
         self.icon_name = icon_name
-
+        
         -- Update the icons for all interfaces:
         for i, widget in pairs( self.interfaces ) do
             widget.image = image(
@@ -241,10 +255,31 @@ end
 
 -----------------------------------------------------------------------------
 
+-- Query battery status.
+function _M:receive_id( message, name, network_no )
+
+    --adroit.alert( name .. ": '" .. tostring( network_no ) .. "'", "receive_id" )
+
+    self.status.network_no = network_no
+
+    -- Query remaining properties:
+    for name, query in pairs( self.queries ) do
+        if name ~= "network_no" then
+            query:send( network_no )
+        end
+    end
+end
+
+
+-----------------------------------------------------------------------------
+
 -- Process query response.
 function _M:receive_poll( message, name, status )
 
-    adroit.alert( name .. ": '" .. tostring( status ) .. "'", "receive_poll" )
+    --adroit.alert(
+        --name .. ": '" .. tostring( status ) .. "', type: " .. type( status ),
+        --"receive_poll"
+    --)
 
 --    <method name="IsWirelessUp" />
 --    1 or 0
@@ -308,24 +343,8 @@ function _M:receive_poll( message, name, status )
 
     -- If icon changes, then update UIs
     --self:update( status.State, tonumber( status.Percentage ) )
-end
 
-
------------------------------------------------------------------------------
-
--- Query battery status.
-function _M:receive_id( message, name, network_no )
-
-    adroit.alert( name .. ": '" .. network_no .. "'", "receive_id" )
-
-    self.status.network_no = network_no
-
-    -- Query remaining properties:
-    for name, query in pairs( self.queries ) do
-        if name ~= "network_no" then
-            query:send( network_no )
-        end
-    end
+    self:update()
 end
 
 
