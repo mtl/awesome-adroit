@@ -62,6 +62,9 @@ function _M:initialize( device )
         self.receive_poll, self
     )
 
+    self.status = {}
+    self.tooltip = awful.tooltip( {} )
+    self.tooltip:set_text( "No data yet." )
 end
 
 
@@ -96,6 +99,8 @@ function _M:get_ui()
 
     --w.image = image( image_prefix .. self.icon_name .. image_suffix )
 
+    self.tooltip:add_to_object( w )
+
     return w
 end
 
@@ -117,12 +122,63 @@ end
 
 -----------------------------------------------------------------------------
 
+-- Process battery status update.
+function _M:receive_poll( message, status )
+
+    self.status = status
+-- status = {
+--     "IsRechargeable",       -- boolean
+--     "EnergyRate",           -- string
+--     "Vendor",               -- string
+--     "Online",               -- boolean
+--     "RecallNotice",         -- boolean
+--     "PowerSupply",          -- boolean
+--     "HasStatistics",        -- boolean
+--     "RecallUrl",            -- string
+--     "EnergyFull",           -- string
+--     "EnergyEmpty",          -- string
+--     "TimeToFull",           -- number
+--     "TimeToEmpty",          -- number
+--     "Type",                 -- number
+--     "IsPresent",            -- boolean
+--     "UpdateTime",           -- number
+--     "Capacity",             -- string
+--     "Percentage",           -- string
+--     "HasHistory",           -- boolean
+--     "EnergyFullDesign",     -- string
+--     "State",                -- number
+--     "NativePath",           -- string
+--     "RecallVendor",         -- string
+--     "Model",                -- string
+--     "Technology",           -- number
+--     "Energy",               -- string
+--     "Serial",               -- string
+--     "Voltage",              -- strin
+-- }
+
+    self:update()
+end
+
+
+-----------------------------------------------------------------------------
+
+-- Query battery status.
+function _M:send_poll()
+
+    self.dbus_method_caller:invoke()
+end
+
+
+-----------------------------------------------------------------------------
+
 -- Update all widget UIs as needed.
-function _M:update( state, percentage )
+function _M:update()
+
+    local state = self.status.State
+    local percentage = tonumber( self.status.Percentage )
 
     local level = 0
     local level_string = "000"
-
     for threshold, ls in pairs( status_thresholds ) do
         if percentage >= threshold and level < threshold then
             level_string = ls
@@ -147,62 +203,61 @@ function _M:update( state, percentage )
             )
         end
     end
+
+    self:update_tooltip()
 end
 
 
 -----------------------------------------------------------------------------
 
--- Process battery status update.
-function _M:receive_poll( message, status )
+function _M:update_tooltip()
 
--- IsRechargeable = boolean
--- EnergyRate = string
--- Vendor = string
--- Online = boolean
--- RecallNotice = boolean
--- PowerSupply = boolean
--- HasStatistics = boolean
--- RecallUrl = string
--- EnergyFull = string
--- EnergyEmpty = string
--- TimeToFull = number
--- TimeToEmpty = number
--- Type = number
--- IsPresent = boolean
--- UpdateTime = number
--- Capacity = string
--- Percentage = string
--- HasHistory = boolean
--- EnergyFullDesign = string
--- State = number
--- NativePath = string
--- RecallVendor = string
--- Model = string
--- Technology = number
--- Energy = string
--- Serial = string
--- Voltage = strin
+    local s = self.status
+    local u = "Unknown"
+
+    local c
+    local t
+    local T
+    if s.State == nil then
+        c = u
+        t = u
+        T = u
+    elseif s.State == 1 then
+        c = "Charging"
+        t = "full"
+        T = "Full"
+    else
+        c = "Discharging"
+        t = "empty"
+        T = "Empty"
+    end
 
 
+    local round = function ( num, idp )
+        local mult = 10^(idp or 0)
+        if num >= 0 then return math.floor(num * mult + 0.5) / mult
+        else return math.ceil(num * mult - 0.5) / mult end
+    end
 
+    local sec = s[ "TimeTo" .. T ]
+    local hrs = math.floor( sec / 3600 )
+    local min = math.floor( ( sec - hrs * 3600 ) / 60 )
+    if min < 10 then
+        min = "0" .. min
+    end
 
-    --t = ""
-    --for key, value in pairs( status ) do
-        --t = t .. key .. "=" .. type( value ) .. "\n"
-    --end
-    --print( "Status: " .. t .. "FIN" )
+    local percent = u
+    if s.Percentage ~= nil then
+        percent = round( tonumber( s.Percentage ), 1 )
+    end
 
-    -- If icon changes, then update UIs
-    self:update( status.State, tonumber( status.Percentage ) )
-end
+    self.tooltip:set_text(
+        "Device: " .. self.device .. "\n" ..
+        "State: " .. c .. "\n" ..
+        "Percent full: " .. percent .. "%\n" ..
+        "Time until " .. t .. ": " .. hrs .. ":" .. min
+    )
 
-
------------------------------------------------------------------------------
-
--- Query battery status.
-function _M:send_poll()
-
-    self.dbus_method_caller:invoke()
 end
 
 

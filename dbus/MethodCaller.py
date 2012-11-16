@@ -116,7 +116,7 @@ def call_awesome_with_result( args, result ):
             dbus_interface = args.recipient + ".dbus"
         )
     except dbus.exceptions.DBusException:
-        print( "Could not connect to awesome+adroit." )
+        print( "MethodCaller.py: Could not connect to awesome+adroit." )
 
 
 #----------------------------------------------------------------------------

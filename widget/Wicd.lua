@@ -11,6 +11,8 @@ adroit.require( "adroit.widget.WicdQuery" )
 
 
 -----------------------------------------------------------------------------
+-- signal sender=:1.3 -> dest=(null destination) serial=1192836 path=/org/wicd/daemon; interface=org.wicd.daemon; member=ConnectResultsSent
+--    string "success"
 
 -- signal sender=:1.3 -> dest=(null destination) serial=1077935 path=/org/wicd/daemon; interface=org.wicd.daemon; member=StatusChanged
 --    uint32 2
@@ -40,24 +42,36 @@ adroit.require( "adroit.widget.WicdQuery" )
 
 -----------------------------------------------------------------------------
 
-image_prefix = adroit.location .. "/themes/Faenza/64/gnome-netstatus-"
---image_strength = { "0-24", "25-49", "50-74", "75-100" }
-image_states = {
-    disconnected = "disconn",
-    idle = "idle",
-    transmitting = "tx",
-    receiving = "rx",
-    duplex = "txrx",
-}
-image_suffix = ".png"
+--image_prefix = adroit.location .. "/themes/Faenza/64/gnome-netstatus-"
+--image_states = {
+--    disconnected = "disconn",
+--    idle = "idle",
+--    transmitting = "tx",
+--    receiving = "rx",
+--    duplex = "txrx",
+--}
+-- More-or-less arbitrary thresholds for the various icons:
+--status_thresholds = {
+--    [ 00 ] = "0-24",
+--    [ 25 ] = "25-49",
+--    [ 50 ] = "50-74",
+--    [ 75 ] = "75-100",
+--}
 
+image_prefix = adroit.location .. "/themes/Faenza/64/notification-network-wireless-"
+image_states = {
+    disconnected = "disconnected",
+}
 -- More-or-less arbitrary thresholds for the various icons:
 status_thresholds = {
-    [ 00 ] = "0-24",
-    [ 25 ] = "25-49",
-    [ 50 ] = "50-74",
-    [ 75 ] = "75-100",
+    [ 00 ] = "none",
+    [ 06 ] = "low",
+    [ 40 ] = "medium",
+    [ 70 ] = "high",
+    [ 85 ] = "full",
 }
+
+image_suffix = ".png"
 
 
 -----------------------------------------------------------------------------
@@ -108,6 +122,8 @@ function _M:initialize( device )
     end
 
     self.status = {}
+    self.tooltip = awful.tooltip( {} )
+    self.tooltip:set_text( "No data yet." )
 end
 
 
@@ -140,6 +156,8 @@ function _M:get_ui()
     --if self.icon_name == "" then
         --self.poll:now()
     --end
+
+    self.tooltip:add_to_object( w )
 
     return w
 end
@@ -208,6 +226,50 @@ end
 
 -----------------------------------------------------------------------------
 
+-- Query battery status.
+function _M:receive_id( message, name, network_no )
+
+    --adroit.alert( name .. ": '" .. tostring( network_no ) .. "'", "receive_id" )
+
+    self.status.network_no = network_no
+
+    -- Query remaining properties:
+    for name, query in pairs( self.queries ) do
+        if name ~= "network_no" then
+            query:send( network_no )
+        end
+    end
+end
+
+
+-----------------------------------------------------------------------------
+
+-- Process query response.
+function _M:receive_poll( message, name, status )
+
+    --print(
+        --"Received: Name='" .. name .. "', " ..
+        --"Type: " .. type( status ) .. ", " ..
+        --"Value: " .. tostring( status )
+    --)
+
+    self.status[ name ] = status
+    self:update()
+end
+
+
+-----------------------------------------------------------------------------
+
+-- Query status properties.
+function _M:send_poll()
+
+    -- Start by getting the current network number:
+    self.queries.network_no:send()
+end
+
+
+-----------------------------------------------------------------------------
+
 -- Update all widget UIs as needed.
 function _M:update()
 
@@ -250,111 +312,27 @@ function _M:update()
             )
         end
     end
+
+    self:update_tooltip()
 end
 
 
 -----------------------------------------------------------------------------
 
--- Query battery status.
-function _M:receive_id( message, name, network_no )
+function _M:update_tooltip()
 
-    --adroit.alert( name .. ": '" .. tostring( network_no ) .. "'", "receive_id" )
+    local s = self.status
+    local u = "Unknown"
+    self.tooltip:set_text(
+        "Device: " .. self.device .. "\n" ..
+        "Connected to: " .. ( s.essid or u ) .. "\n" ..
+        "IP address: " .. ( s.ip_address or u ) .. "\n" ..
+        "BSSID: " .. ( s.bssid or u ) .. "\n" ..
+        "Encryption: " .. ( s.encryption_method or u ) .. "\n" ..
+        "Signal: " .. ( s.quality or u ) .. "%\n" ..
+        "Bitrate: " .. ( s.bitrate or u )
+    )
 
-    self.status.network_no = network_no
-
-    -- Query remaining properties:
-    for name, query in pairs( self.queries ) do
-        if name ~= "network_no" then
-            query:send( network_no )
-        end
-    end
-end
-
-
------------------------------------------------------------------------------
-
--- Process query response.
-function _M:receive_poll( message, name, status )
-
-    --adroit.alert(
-        --name .. ": '" .. tostring( status ) .. "', type: " .. type( status ),
-        --"receive_poll"
-    --)
-
---    <method name="IsWirelessUp" />
---    1 or 0
-
---    <method name="GetWirelessIP">
---      <arg direction="in"  type="v" name="ifconfig" />
---    </method>
---    ip address
-
---    <method name="GetCurrentNetwork">
---      <arg direction="in"  type="v" name="iwconfig" />
---    </method>
---    essid
-
---    <method name="GetCurrentNetworkID">
---      <arg direction="in"  type="v" name="iwconfig" />
---    </method>
---    0 (index)
-
---    <method name="GetApBssid" />
---    mac addr
-
---    <method name="CheckIfWirelessConnecting" />
---    0 or 1
-
---    <method name="CheckWirelessConnectingStatus" />
---    done
-
---    <method name="GetCurrentBitrate">
---      <arg direction="in"  type="v" name="iwconfig" />
---    </method>
---    1 Mb/s
-
---    <method name="GetWirelessProperty">
---      <arg direction="in"  type="v" name="networkid" />
---      <arg direction="in"  type="v" name="property" />
---    </method>
---    essid
---    bssid
---    quality (0-100)
---    strength (dbm)
---    bitrates (only one)
---    use_settings_globally
---    has_profile
---    (before|after|predisconnect|postdisconnect)script
---    hidden
---    channel
---    mode
---    encryption (bool)
---    encryption_method
-
-
-
-
-
-    --t = ""
-    --for key, value in pairs( status ) do
-        --t = t .. key .. "=" .. type( value ) .. "\n"
-    --end
-    --print( "Status: " .. t .. "FIN" )
-
-    -- If icon changes, then update UIs
-    --self:update( status.State, tonumber( status.Percentage ) )
-
-    self:update()
-end
-
-
------------------------------------------------------------------------------
-
--- Query status properties.
-function _M:send_poll()
-
-    -- Start by getting the current network number:
-    self.queries.network_no:send()
 end
 
 
